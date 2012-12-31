@@ -5,15 +5,16 @@
     var efHost = (EfTextTemplateHost)Host;
     var code = new CodeGenerationTools(this);
 
-    var dataAnnotationsNamespace = efHost.EntityFrameworkVersion >= new Version(4, 4)
-        ? "System.ComponentModel.DataAnnotations.Schema"
-        : "System.ComponentModel.DataAnnotations";
-
 #>
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using <#= dataAnnotationsNamespace #>;
+<# 
+    if (efHost.EntityFrameworkVersion >= new Version(4, 4))
+    {
+        WriteLine("using System.ComponentModel.DataAnnotations.Schema;");
+    }
+#>
 
 namespace <#= code.EscapeNamespace(efHost.Namespace) #>
 {
