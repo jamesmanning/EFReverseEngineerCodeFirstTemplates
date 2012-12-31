@@ -1,0 +1,146 @@
+<#@ template hostspecific="true" language="C#" #>
+<#@ include file="EF.Utility.CS.ttinclude" #><#@
+ output extension=".cs" #><#
+
+    var efHost = (EfTextTemplateHost)Host;
+    var code = new CodeGenerationTools(this);
+#>
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+<#
+		if (efHost.EntityFrameworkVersion >= new Version(4, 4))
+		{
+#>
+using System.ComponentModel.DataAnnotations.Schema;
+<#
+		}
+#>
+
+namespace <#= code.EscapeNamespace(efHost.Namespace) #>
+{
+<#
+		var tableName = (string)efHost.TableSet.MetadataProperties["Table"].Value ?? efHost.TableSet.Name;
+		var conventionTableName = System.Data.Entity.Design.PluralizationServices.PluralizationService
+				.CreateService(new CultureInfo("en"))
+				.Pluralize(efHost.EntityType.Name);
+
+		var schemaName = (string)efHost.TableSet.MetadataProperties["Schema"].Value;
+		schemaName = string.IsNullOrWhiteSpace(schemaName)
+				? "dbo"
+				: schemaName;
+
+		if(conventionTableName != tableName)
+		{
+#>
+    [Table("<#= tableName #>", Schema="<#= schemaName #>")]
+<#
+		}
+
+#>
+    public class <#= efHost.EntityType.Name #>
+    {
+<#
+    var collectionNavigations = efHost.EntityType.NavigationProperties.Where(
+        np => np.DeclaringType == efHost.EntityType
+            && np.ToEndMember.RelationshipMultiplicity == RelationshipMultiplicity.Many);
+
+    // Add a ctor to initialize any collections
+    if (collectionNavigations.Any())
+    {
+#>
+        public <#= code.Escape(efHost.EntityType) #>()
+        {
+<#
+        foreach (var navProperty in collectionNavigations)
+        {
+#>
+            this.<#= code.Escape(navProperty) #> = new List<<#= code.Escape(navProperty.ToEndMember.GetEntityType()) #>>();
+<#
+        }
+#>
+        }
+
+<#
+    }
+        
+    foreach (var property in efHost.EntityType.Properties)
+    {
+				var storeProp = efHost.PropertyToColumnMappings[property];
+				var sgpFacet = storeProp.TypeUsage.Facets.SingleOrDefault(f => f.Name == "StoreGeneratedPattern");
+				var columnName = efHost.PropertyToColumnMappings[property].Name;
+ 				var storeGeneratedPattern = sgpFacet == null ? StoreGeneratedPattern.None : (StoreGeneratedPattern)sgpFacet.Value;
+				var type = (PrimitiveType)property.TypeUsage.EdmType;
+				var fixedLengthFacet = (Facet)property.TypeUsage.Facets.SingleOrDefault(f => f.Name == "FixedLength");
+				var maxLengthFacet = (Facet)property.TypeUsage.Facets.SingleOrDefault(f => f.Name == "MaxLength");
+				
+				if(code.Escape(property) != columnName)
+				{
+		#>
+		[Column("<#= columnName #>")]
+		<#
+				}
+
+
+				if(efHost.EntityType.KeyMembers.Contains(property))
+				{
+		#>
+		[Key]
+		<#
+				}
+
+				if(!property.Nullable)
+				{
+		#>
+		[Required]
+		<#
+				}
+
+				
+
+				if (maxLengthFacet != null && !maxLengthFacet.IsUnbounded)
+				{
+		#>
+		[MaxLength(<#= maxLengthFacet.Value #>)]
+		<#
+				if (fixedLengthFacet != null && (bool)fixedLengthFacet.Value) //If IsFixed then MinLength = MaxLength 
+				{
+		#>
+		[MinLength(<#= maxLengthFacet.Value #>)]
+		<#
+				}
+
+					if (storeGeneratedPattern == StoreGeneratedPattern.Computed
+						&& type.ClrEquivalentType == typeof(byte[])
+						&& (int)maxLengthFacet.Value == 8)
+					{
+		#> 
+		[RowVersion] 
+		<#
+					}
+				}
+
+		
+#>
+<#= Accessibility.ForProperty(property) #> <#= code.Escape(property.TypeUsage) #> <#= code.Escape(property) #> { get; set; }
+<#
+    }
+
+    foreach (var navProperty in efHost.EntityType.NavigationProperties.Where(np => np.DeclaringType == efHost.EntityType))
+    {
+        if (navProperty.ToEndMember.RelationshipMultiplicity == RelationshipMultiplicity.Many)
+        {
+#>
+        public virtual ICollection<<#= code.Escape(navProperty.ToEndMember.GetEntityType()) #>> <#= code.Escape(navProperty) #> { get; set; }
+<#
+        }
+        else
+        {
+#>
+        public virtual <#= code.Escape(navProperty.ToEndMember.GetEntityType()) #> <#= code.Escape(navProperty) #> { get; set; }
+<#
+        }
+    }
+#>
+    }
+}
