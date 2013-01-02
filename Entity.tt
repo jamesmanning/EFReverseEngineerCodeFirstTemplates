@@ -118,23 +118,24 @@ namespace <#= code.EscapeNamespace(efHost.Namespace) #>
             attributes.Add(String.Format("[Column(\"{0}\")]", columnName));
         }
 
-        // logic copied from original EF Power Tools Beta2 Mapping.tt
-        if (type.ClrEquivalentType == typeof(int)
-            || type.ClrEquivalentType == typeof(decimal)
-            || type.ClrEquivalentType == typeof(short)
-            || type.ClrEquivalentType == typeof(long))
+        // logic based on EF Power Tools Beta2 Mapping.tt
+        var conventionStoreGeneratedPattern = StoreGeneratedPattern.None;
+        if (isPartOfPrimaryKey)
         {
-            if (isPartOfPrimaryKey && storeGeneratedPattern != StoreGeneratedPattern.Identity)
+            if (type.ClrEquivalentType == typeof(int)
+                || type.ClrEquivalentType == typeof(decimal)
+                || type.ClrEquivalentType == typeof(short)
+                || type.ClrEquivalentType == typeof(long))
             {
-                attributes.Add("[DatabaseGenerated(DatabaseGeneratedOption.None)]");
-            }
-            else if ((!isPartOfPrimaryKey || efHost.EntityType.KeyMembers.Count > 1) && storeGeneratedPattern == StoreGeneratedPattern.Identity)
-            {
-                attributes.Add("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+                conventionStoreGeneratedPattern = StoreGeneratedPattern.Identity;
             }
         }
+        if (storeGeneratedPattern != conventionStoreGeneratedPattern)
+        {
+            attributes.Add(String.Format("[DatabaseGenerated(DatabaseGeneratedOption.{0})]", storeGeneratedPattern));
+        }
 
-        // logic copied from original EF Power Tools Beta2 Mapping.tt
+        // logic based on EF Power Tools Beta2 Mapping.tt
         if (type.ClrEquivalentType == typeof(string)
             || type.ClrEquivalentType == typeof(byte[]))
         {
