@@ -80,17 +80,50 @@ namespace <#= code.EscapeNamespace(efHost.Namespace) #>
             attributes.Add(String.Format("[Column(\"{0}\")]", columnName));
         }
 
-        if(efHost.EntityType.KeyMembers.Contains(property))
+        // WRT the primary key, a given column can be:
+        // 1) part of the primary key, primary key is a single column
+        // 2) part of the primary key, primary key is multiple columns
+        // 3) not part of the primary key
+        // In addition, the column may separately need to have the column name specified due to the 
+        // convention name not matching. This leads to 6 possible combinations that must be dealt 
+        // with together, since the 'Column' attribute is used for both specifying column name and
+        // column ordering for multi-column primary keys.
+
+        var columnNameShouldBeSpecified = code.Escape(property) != columnName;
+        var isPartOfPrimaryKey = efHost.EntityType.KeyMembers.Contains(property);
+        var primaryKeyHasMultipleColumns = efHost.EntityType.KeyMembers.Count > 1;
+
+        if (isPartOfPrimaryKey)
         {
-            attributes.Add("[Key]");
+            if (primaryKeyHasMultipleColumns)
+            {
+                var columnNumber = efHost.EntityType.KeyMembers.IndexOf(property);
+                if (columnNameShouldBeSpecified)
+                {
+                    attributes.Add(String.Format("[Key, Column(\"{0}\", Order = {1})]", columnName, columnNumber));
+                }
+                else
+                {
+                    attributes.Add(String.Format("[Key, Column(Order = {0})]", columnNumber));
+                }
+            }
+            else
+            {
+                attributes.Add("[Key]");
+            }
+        }
+        else if (columnNameShouldBeSpecified)
+        {
+            // not part of primary key, so we can just emit the single column attribute if needed
+            attributes.Add(String.Format("[Column(\"{0}\")]", columnName));
         }
 
-        if(!property.Nullable)
+        if (property.Nullable == false)
         {
             attributes.Add("[Required]");
         }
 
-        if (maxLengthFacet != null && !maxLengthFacet.IsUnbounded)
+        if (maxLengthFacet != null && maxLengthFacet.IsUnbounded == false)
         {
             attributes.Add(String.Format("[MaxLength({0})]", maxLengthFacet.Value));
             if (fixedLengthFacet != null && (bool)fixedLengthFacet.Value) //If IsFixed then MinLength = MaxLength 
