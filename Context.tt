@@ -17,10 +17,10 @@ namespace <#= code.EscapeNamespace(efHost.Namespace) #>
             Database.SetInitializer<<#= efHost.EntityContainer.Name #>>(null);
         }
 
-		public <#= efHost.EntityContainer.Name #>()
-			: base("Name=<#= efHost.EntityContainer.Name #>")
-		{
-		}
+        public <#= efHost.EntityContainer.Name #>()
+            : base("Name=<#= efHost.EntityContainer.Name #>")
+        {
+        }
 
 <#
     foreach (var set in efHost.EntityContainer.BaseEntitySets.OfType<EntitySet>())
