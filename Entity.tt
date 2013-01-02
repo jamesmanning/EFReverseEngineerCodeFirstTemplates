@@ -119,27 +119,10 @@ namespace <#= code.EscapeNamespace(efHost.Namespace) #>
         }
 
         // logic based on EF Power Tools Beta2 Mapping.tt
-        var conventionStoreGeneratedPattern = StoreGeneratedPattern.None;
-        if (isPartOfPrimaryKey)
-        {
-            if (type.ClrEquivalentType == typeof(int)
-                || type.ClrEquivalentType == typeof(decimal)
-                || type.ClrEquivalentType == typeof(short)
-                || type.ClrEquivalentType == typeof(long))
-            {
-                conventionStoreGeneratedPattern = StoreGeneratedPattern.Identity;
-            }
-        }
-        if (storeGeneratedPattern != conventionStoreGeneratedPattern)
-        {
-            attributes.Add(String.Format("[DatabaseGenerated(DatabaseGeneratedOption.{0})]", storeGeneratedPattern));
-        }
-
-        // logic based on EF Power Tools Beta2 Mapping.tt
         if (type.ClrEquivalentType == typeof(string)
             || type.ClrEquivalentType == typeof(byte[]))
         {
-            if (!property.Nullable)
+            if (!property.Nullable && storeGeneratedPattern == StoreGeneratedPattern.None)
             {
                 attributes.Add("[Required]");
             }
@@ -159,6 +142,23 @@ namespace <#= code.EscapeNamespace(efHost.Namespace) #>
                     attributes.Add("[RowVersion]");
                 }
             }
+        }
+
+        // logic based on EF Power Tools Beta2 Mapping.tt
+        var conventionStoreGeneratedPattern = StoreGeneratedPattern.None;
+        if (isPartOfPrimaryKey)
+        {
+            if (type.ClrEquivalentType == typeof(int)
+                || type.ClrEquivalentType == typeof(decimal)
+                || type.ClrEquivalentType == typeof(short)
+                || type.ClrEquivalentType == typeof(long))
+            {
+                conventionStoreGeneratedPattern = StoreGeneratedPattern.Identity;
+            }
+        }
+        if (storeGeneratedPattern != conventionStoreGeneratedPattern)
+        {
+            attributes.Add(String.Format("[DatabaseGenerated(DatabaseGeneratedOption.{0})]", storeGeneratedPattern));
         }
 
         PushIndent(new string(' ', 8));
