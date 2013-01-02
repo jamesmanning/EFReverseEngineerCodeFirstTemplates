@@ -118,24 +118,45 @@ namespace <#= code.EscapeNamespace(efHost.Namespace) #>
             attributes.Add(String.Format("[Column(\"{0}\")]", columnName));
         }
 
-        if (property.Nullable == false)
+        // logic copied from original EF Power Tools Beta2 Mapping.tt
+        if (type.ClrEquivalentType == typeof(int)
+            || type.ClrEquivalentType == typeof(decimal)
+            || type.ClrEquivalentType == typeof(short)
+            || type.ClrEquivalentType == typeof(long))
         {
-            attributes.Add("[Required]");
+            if (isPartOfPrimaryKey && storeGeneratedPattern != StoreGeneratedPattern.Identity)
+            {
+                attributes.Add("[DatabaseGenerated(DatabaseGeneratedOption.None)]");
+            }
+            else if ((!isPartOfPrimaryKey || efHost.EntityType.KeyMembers.Count > 1) && storeGeneratedPattern == StoreGeneratedPattern.Identity)
+            {
+                attributes.Add("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+            }
         }
 
-        if (maxLengthFacet != null && maxLengthFacet.IsUnbounded == false)
+        // logic copied from original EF Power Tools Beta2 Mapping.tt
+        if (type.ClrEquivalentType == typeof(string)
+            || type.ClrEquivalentType == typeof(byte[]))
         {
-            attributes.Add(String.Format("[MaxLength({0})]", maxLengthFacet.Value));
-            if (fixedLengthFacet != null && (bool)fixedLengthFacet.Value) //If IsFixed then MinLength = MaxLength 
+            if (!property.Nullable)
             {
-                attributes.Add(String.Format("[MinLength({0})]", maxLengthFacet.Value));
+                attributes.Add("[Required]");
             }
 
-            if (storeGeneratedPattern == StoreGeneratedPattern.Computed
-                && type.ClrEquivalentType == typeof(byte[])
-                && (int)maxLengthFacet.Value == 8)
+            if (maxLengthFacet != null && !maxLengthFacet.IsUnbounded)
             {
-                attributes.Add("[RowVersion]");
+                attributes.Add(String.Format("[MaxLength({0})]", maxLengthFacet.Value));
+                if (fixedLengthFacet != null && (bool)fixedLengthFacet.Value) //If IsFixed then MinLength = MaxLength 
+                {
+                    attributes.Add(String.Format("[MinLength({0})]", maxLengthFacet.Value));
+                }
+
+                if (storeGeneratedPattern == StoreGeneratedPattern.Computed
+                    && type.ClrEquivalentType == typeof(byte[])
+                    && (int)maxLengthFacet.Value == 8)
+                {
+                    attributes.Add("[RowVersion]");
+                }
             }
         }
 
