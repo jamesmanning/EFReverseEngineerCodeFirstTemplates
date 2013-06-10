@@ -75,10 +75,6 @@ namespace <#= code.EscapeNamespace(efHost.Namespace) #>
         var maxLengthFacet = (Facet)property.TypeUsage.Facets.SingleOrDefault(f => f.Name == "MaxLength");
 
         var attributes = new List<string>();
-        if(code.Escape(property) != columnName)
-        {
-            attributes.Add(String.Format("[Column(\"{0}\")]", columnName));
-        }
 
         // WRT the primary key, a given column can be:
         // 1) part of the primary key, primary key is a single column
