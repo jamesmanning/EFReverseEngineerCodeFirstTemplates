@@ -139,7 +139,7 @@ namespace <#= code.EscapeNamespace(efHost.Namespace) #>
                     && type.ClrEquivalentType == typeof(byte[])
                     && (int)maxLengthFacet.Value == 8)
                 {
-                    attributes.Add("[RowVersion]");
+                    attributes.Add("[Timestamp]");
                 }
             }
         }
