@@ -30,7 +30,7 @@ namespace <#= code.EscapeNamespace(efHost.Namespace) #>
         ? "dbo"
         : schemaName;
 
-    if(conventionTableName != tableName)
+    if(conventionTableName != tableName || schemaName != "dbo")
     {
 #>
     [Table("<#= tableName #>", Schema="<#= schemaName #>")]
